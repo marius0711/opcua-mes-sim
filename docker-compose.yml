@@ -4,6 +4,12 @@ services:
     command: python -m opcua_server.server
     ports:
       - "4840:4840"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('localhost', 4840), timeout=2).close()"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
 
   client:
     build: .
@@ -14,7 +20,8 @@ services:
     volumes:
       - db-data:/data
     depends_on:
-      - opcua-server
+      opcua-server:
+        condition: service_healthy
 
   api:
     build: .
