@@ -5,6 +5,7 @@ import time
 from asyncua import Client
 
 from opcua_client.transform import find_vibration_peak, position_repeatability, detect_outliers
+from opcua_server.server import SAMPLE_INTERVAL_S
 from db.store import (
     DEFAULT_DB_PATH,
     get_connection,
@@ -18,6 +19,20 @@ ENDPOINT = os.environ.get("OPCUA_ENDPOINT", "opc.tcp://localhost:4840/freeopcua/
 NAMESPACE_URI = "http://opcua-mes-sim/robotarm"
 ARM_ID = "arm1"
 COLLECTION_DURATION_S = 3.0
+
+# The server only refreshes its Vibration node every SAMPLE_INTERVAL_S, so that is the
+# true information bandwidth of the source, regardless of how fast a client polls it.
+MAX_VIBRATION_FREQUENCY_HZ = 1.0 / SAMPLE_INTERVAL_S / 2
+
+
+def validate_target_frequency(freq):
+    if freq > MAX_VIBRATION_FREQUENCY_HZ:
+        raise ValueError(
+            f"target frequency {freq} Hz exceeds the server's Nyquist limit of "
+            f"{MAX_VIBRATION_FREQUENCY_HZ} Hz (it refreshes Vibration every "
+            f"{SAMPLE_INTERVAL_S}s). A true signal above this limit would be aliased "
+            "to a lower, incorrect frequency instead of being detected correctly."
+        )
 
 
 async def collect_run(client, idx):

@@ -2,7 +2,14 @@ import asyncio
 
 from asyncua import Client
 
-from opcua_client.client import ENDPOINT, NAMESPACE_URI, collect_run, compute_metrics, persist_run
+from opcua_client.client import (
+    ENDPOINT,
+    NAMESPACE_URI,
+    collect_run,
+    compute_metrics,
+    persist_run,
+    validate_target_frequency,
+)
 from db.store import get_connection, init_db
 
 TARGET_FREQUENCIES_HZ = [25.0, 25.0, 40.0]
@@ -20,6 +27,7 @@ async def main():
         target_freq_node = await config.get_child(f"{idx}:TargetFrequencyHz")
 
         for freq in TARGET_FREQUENCIES_HZ:
+            validate_target_frequency(freq)
             await target_freq_node.write_value(freq)
             raw = await collect_run(client, idx)
             vibration_result, position_result, outlier_indices = compute_metrics(raw)
