@@ -93,8 +93,9 @@ alone.
 
 ## Known issues encountered and how they were handled
 
-Three real issues surfaced during development and testing. Each was diagnosed to its root
-cause, fixed, and re-verified.
+Several real issues surfaced during development and deliberate testing. Each was diagnosed
+to its root cause, then either fixed and re-verified, or documented as an accepted, known
+limit of the chosen scope.
 
 1. **Signal processing.** The FFT initially used a fixed, assumed sample rate instead of the
    one actually achieved by network polling, which shifted the detected peak frequency by
@@ -108,6 +109,21 @@ cause, fixed, and re-verified.
    `python -m pytest`, so the project root was missing from the Python path and imports
    failed on the runner despite passing locally. Fixed by aligning the CI command with the
    local one.
+4. **Signal processing (aliasing).** Requesting a `TargetFrequencyHz` above the server's own
+   update rate (200 Hz, so a 100 Hz Nyquist limit) produced a plausible looking but
+   completely wrong peak frequency, with no warning. Fixed by validating the requested
+   frequency against `MAX_VIBRATION_FREQUENCY_HZ` before it is sent, so an out of range
+   request now fails loudly instead of returning silently wrong data.
+5. **API robustness.** Querying `/results` before any measurement run existed, or against a
+   missing database file, raised an unhandled `sqlite3.OperationalError` and returned a raw
+   500 response. Fixed by ensuring the schema exists on every request and by handling an
+   empty result set explicitly; the endpoint now returns `200` with `[]`.
+6. **Persistence under concurrency (documented, not fixed).** Two `multi_run` processes
+   writing to the same SQLite file concurrently completed without error, because Python's
+   `sqlite3` module retries for up to 5 seconds by default and the write bursts here are
+   short. This is not a guarantee: heavier concurrent write load could still surface
+   `database is locked` errors. Accepted as a known limit of the SQLite choice rather than
+   engineered around, since it matches the project's scope.
 
-All three are now covered by the test suite and the CI pipeline, so a regression in any of
-them would be caught automatically going forward.
+All fixed issues are now covered by the test suite and the CI pipeline, so a regression in
+any of them would be caught automatically going forward.
