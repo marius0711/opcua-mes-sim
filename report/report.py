@@ -30,6 +30,8 @@ def fetch_run_summaries(conn):
 
 
 def flag_anomalies(summaries, threshold=DEVIATION_THRESHOLD):
+    if not summaries:
+        return summaries
     peaks = [s["peak_frequency_hz"] for s in summaries]
     baseline = median(peaks)
     for s in summaries:

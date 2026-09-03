@@ -28,3 +28,14 @@ def test_get_results_returns_run_summaries(tmp_path, monkeypatch):
     assert data[0]["run_id"] == run_id
     assert data[0]["peak_frequency_hz"] == 25.0
     assert data[0]["anomaly"] is False
+
+
+def test_get_results_returns_empty_list_for_missing_db(tmp_path, monkeypatch):
+    db_path = tmp_path / "does_not_exist_yet.db"
+    monkeypatch.setattr(db_store, "DEFAULT_DB_PATH", db_path)
+
+    client = TestClient(app)
+    response = client.get("/results")
+
+    assert response.status_code == 200
+    assert response.json() == []

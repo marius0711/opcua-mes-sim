@@ -26,6 +26,12 @@ def test_flag_anomalies_no_anomaly_when_all_close():
     assert all(not s["anomaly"] for s in flagged)
 
 
+def test_flag_anomalies_handles_empty_list():
+    flagged = flag_anomalies([])
+
+    assert flagged == []
+
+
 def test_format_report_includes_anomaly_marker():
     summaries = [
         {"run_id": 1, "started_at": "2026-01-01", "target_frequency_hz": 25.0,
